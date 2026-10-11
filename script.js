@@ -1,7 +1,7 @@
 
-/* =========================================
-   GRAY365 STUDIO — DIGITAL BUSINESS CARD
-   ========================================= */
+/* =====================================================
+   GRAY365 STUDIO — COMPLETE DIGITAL CARD JAVASCRIPT
+   ===================================================== */
 
 const GRAY365 = {
   name: "Gray365 Studio",
@@ -22,9 +22,9 @@ const GRAY365 = {
 };
 
 
-/* =========================================
-   TOAST MESSAGE
-   ========================================= */
+/* =====================================================
+   TOAST NOTIFICATIONS
+   ===================================================== */
 
 const toast = document.getElementById("toast");
 let toastTimer;
@@ -46,16 +46,16 @@ function showToast(message) {
 }
 
 
-/* =========================================
+/* =====================================================
    SOCIAL MEDIA LINKS
-   ========================================= */
+   ===================================================== */
 
 document.querySelectorAll("[data-placeholder]").forEach(link => {
   const platform = link.dataset.placeholder;
-  const url = GRAY365.socials[platform];
+  const profileURL = GRAY365.socials[platform];
 
-  if (url) {
-    link.href = url;
+  if (profileURL) {
+    link.href = profileURL;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
   } else {
@@ -63,15 +63,15 @@ document.querySelectorAll("[data-placeholder]").forEach(link => {
 
     link.addEventListener("click", event => {
       event.preventDefault();
-      showToast(`The ${platform} link has not been configured.`);
+      showToast(`${platform} profile link is not configured.`);
     });
   }
 });
 
 
-/* =========================================
+/* =====================================================
    SHARE DIGITAL CARD
-   ========================================= */
+   ===================================================== */
 
 const shareButton = document.getElementById("shareBtn");
 
@@ -81,7 +81,7 @@ if (shareButton) {
       title: GRAY365.name,
       text:
         "Gray365 Studio — Nail Technician & Nail Artist. " +
-        "Book your nail appointment with us.",
+        "Contact us to book your nail appointment.",
       url: window.location.href
     };
 
@@ -90,26 +90,24 @@ if (shareButton) {
         await navigator.share(shareData);
       } catch (error) {
         if (error.name !== "AbortError") {
-          showToast("Unable to share right now. Please copy the page link.");
+          showToast("Unable to share. Copy the card link from your browser.");
         }
       }
     } else {
       try {
         await navigator.clipboard.writeText(window.location.href);
-        showToast("Digital card link copied. You can now share it.");
+        showToast("Digital card link copied successfully.");
       } catch (error) {
-        showToast(
-          "Copy the digital card address from your browser to share it."
-        );
+        showToast("Copy the digital card address from your browser.");
       }
     }
   });
 }
 
 
-/* =========================================
-   CREATE VCARD CONTACT FILE
-   ========================================= */
+/* =====================================================
+   VCARD CONTACT GENERATOR
+   ===================================================== */
 
 function escapeVCard(value) {
   return String(value || "")
@@ -119,7 +117,7 @@ function escapeVCard(value) {
     .replace(/;/g, "\\;");
 }
 
-function createVCard() {
+function createGray365VCard() {
   const lines = [
     "BEGIN:VCARD",
     "VERSION:3.0",
@@ -129,8 +127,8 @@ function createVCard() {
     `TITLE:${escapeVCard(GRAY365.jobTitle)}`,
 
     `TEL;TYPE=CELL,VOICE:${GRAY365.phoneInternational}`,
-    `URL:${GRAY365.website}`,
 
+    `URL:${GRAY365.website}`,
     `URL;TYPE=WhatsApp:${GRAY365.whatsapp}`,
 
     `X-SOCIALPROFILE;TYPE=instagram:${GRAY365.socials.Instagram}`,
@@ -146,73 +144,67 @@ function createVCard() {
 }
 
 
-/* =========================================
-   SAVE CONTACT BUTTON
-   ========================================= */
+/* =====================================================
+   SAVE CONTACT
+   ===================================================== */
 
 const saveContactButton = document.getElementById("saveContactBtn");
 
 if (saveContactButton) {
-  saveContactButton.addEventListener("click", async () => {
-    const vcardContent = createVCard();
+  saveContactButton.addEventListener("click", () => {
+    try {
+      const vcardContent = createGray365VCard();
 
-    const contactFile = new File(
-      [vcardContent],
-      "Gray365-Studio.vcf",
-      {
-        type: "text/vcard;charset=utf-8"
-      }
-    );
+      const contactBlob = new Blob(
+        [vcardContent],
+        { type: "text/vcard;charset=utf-8" }
+      );
 
-    /*
-      On supported devices, open the native sharing
-      workflow so the customer can choose a compatible
-      Contacts/import option.
-    */
+      const fileURL = URL.createObjectURL(contactBlob);
+      const downloadLink = document.createElement("a");
 
-    if (
-      navigator.share &&
-      navigator.canShare &&
-      navigator.canShare({ files: [contactFile] })
-    ) {
-      try {
-        await navigator.share({
-          title: "Save Gray365 Studio",
-          files: [contactFile]
-        });
+      downloadLink.href = fileURL;
+      downloadLink.download = "Gray365-Studio.vcf";
+      downloadLink.style.display = "none";
 
-        return;
-      } catch (error) {
-        // Do not download another file if the customer
-        // deliberately cancelled the sharing window.
-        if (error.name === "AbortError") {
-          return;
-        }
-      }
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+
+      // Allow the browser time to begin processing the file.
+      setTimeout(() => {
+        URL.revokeObjectURL(fileURL);
+      }, 60000);
+
+      showToast(
+        "Gray365 contact card prepared. Open the downloaded file and choose Add to Contacts."
+      );
+    } catch (error) {
+      console.error("Unable to create contact card:", error);
+
+      showToast(
+        "Sorry, the contact card could not be created. Please try again."
+      );
     }
-
-    /*
-      Fallback for browsers that cannot share files.
-      The customer opens the downloaded file and saves
-      Gray365 Studio to their Contacts.
-    */
-
-    const fileURL = URL.createObjectURL(contactFile);
-    const downloadLink = document.createElement("a");
-
-    downloadLink.href = fileURL;
-    downloadLink.download = "Gray365-Studio.vcf";
-
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    downloadLink.remove();
-
-    setTimeout(() => {
-      URL.revokeObjectURL(fileURL);
-    }, 10000);
-
-    showToast(
-      "Contact downloaded. Open Gray365-Studio.vcf and choose Save Contact."
-    );
   });
 }
+
+
+/* =====================================================
+   OPTIONAL: UPDATE WHATSAPP BOOKING LINKS
+   ===================================================== */
+
+document.querySelectorAll('a[href*="wa.me"]').forEach(link => {
+  // Use the configured studio WhatsApp number for booking links.
+  const existingURL = new URL(link.href);
+
+  if (existingURL.hostname === "wa.me") {
+    existingURL.pathname = "/233555262368";
+    link.href = existingURL.toString();
+  }
+});
+
+
+/* =====================================================
+   END OF GRAY365 STUDIO JAVASCRIPT
+   ===================================================== */
